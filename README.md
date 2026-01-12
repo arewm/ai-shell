@@ -31,22 +31,46 @@ by providing:
 
 ## Installation
 
+
+
 1. Ensure [Podman](https://podman.io/) is installed and the Podman machine is running.
-2. Ensure [yq](https://github.com/mikefarah/yq) is installed on your host (required for advanced configuration).
-3. Clone this repository.
-4. Build the container image:
+
+2. Clone this repository.
+
+3. Build and install the binary:
+
    ```bash
-   source lib.sh
-   ai-shell-build
+
+   make build
+
+   # Move to a directory in your PATH, or:
+
+   go install github.com/arewm/ai-shell/cmd/ai-shell@latest
+
    ```
-5. **Recommended**: Add `source /path/to/ai-shell/lib.sh` to your shell configuration (`~/.zshrc` or `~/.bashrc`) to
-   make the `ai-shell` command globally available.
+
+
 
 ## Usage
 
+
+
 Navigate to any project directory and run:
+
 ```bash
+
 ai-shell
+
+```
+
+
+
+To build the container image (first time or after updates):
+
+```bash
+
+ai-shell build
+
 ```
 
 ## Platform Support
@@ -80,7 +104,11 @@ Example `.devcontainer/devcontainer.json`:
 ### Helper: Export Environment Variables
 To easily populate the `.env` file for VS Code with your active configuration variables:
 ```bash
-ai-shell-export-env > .devcontainer/.env
+# Print to stdout
+ai-shell export-env
+
+# Save to a file
+ai-shell export-env .devcontainer/.env
 ```
 
 ## CLI Options
@@ -127,7 +155,7 @@ authenticate to services*
 ### Cleanup
 To remove the persistent volume and any lingering containers for the current project:
 ```bash
-ai-shell-cleanup
+ai-shell cleanup
 ```
 This is useful if you want to completely reset your project environment (history, tool configs, etc.) or free up disk
 space. Use `--verbose` to see specific details.
@@ -214,7 +242,7 @@ architecture.
 ### Build Customization
 You can override the default versions of tools during the build process:
 ```bash
-ai-shell-build --build-arg GLAB_VERSION=1.52.0
+ai-shell build --build-arg GLAB_VERSION=1.52.0
 ```
 Available build arguments:
 - `ORAS_VERSION`
