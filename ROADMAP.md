@@ -26,7 +26,7 @@ This roadmap outlines the evolution of `ai-shell` from a personal productivity t
 
 ## Phase 3: Deep Convergence (Merging Architectures)
 
-### Unifying with `devaipod`
+### Unifying with [`devaipod`](https://github.com/cgwalters/devaipod)
 - [ ] **Dual Mode**: Support both Interactive Shell (Human + Agent) and Autonomous Task (Headless Agent) modes in one tool.
 - [ ] **Nested Isolation**: Adopt `bubblewrap` (bwrap) or microVMs inside the container for Defense in Depth against rogue agents.
 - [ ] **Unified Backend**: Align on a common execution engine (e.g., sharing the DevPod backend or a unified Podman wrapper) to support both local execution and cloud provisioning.
