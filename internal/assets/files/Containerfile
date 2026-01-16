@@ -70,21 +70,13 @@ RUN ARCH=$(uname -m) && \
 
 # 4. Create the 'ai' user
 RUN useradd -m -s /bin/zsh -u 1000 ai \
-    && echo "ai ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ai
-
-# 5. Path Fidelity Prep
-# Create the host-matching home path and ensure 'ai' owns it.
-ARG HOST_USER
-ARG HOST_HOME_ROOT
-RUN mkdir -p ${HOST_HOME_ROOT}/${HOST_USER} \
-    && chown ai:ai ${HOST_HOME_ROOT}/${HOST_USER} \
+    && echo "ai ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ai \
     && echo 'eval "$(starship init zsh)"' >> /home/ai/.zshrc \
     && echo 'bindkey "^[[H" beginning-of-line' >> /home/ai/.zshrc \
     && echo 'bindkey "^[[F" end-of-line' >> /home/ai/.zshrc \
     && echo 'bindkey "^[[3~" delete-char' >> /home/ai/.zshrc \
     && echo 'bindkey "^[[1;5C" forward-word' >> /home/ai/.zshrc \
-    && echo 'bindkey "^[[1;5D" backward-word' >> /home/ai/.zshrc \
-    && ln -s /home/ai/.zshrc ${HOST_HOME_ROOT}/${HOST_USER}/.zshrc
+    && echo 'bindkey "^[[1;5D" backward-word' >> /home/ai/.zshrc
 
 # 6. Git Credential Fix
 RUN git config --system credential.helper store
@@ -96,18 +88,6 @@ RUN chmod +x /usr/local/bin/configure.sh
 # 7b. Default Config
 RUN mkdir -p /etc/ai-shell
 COPY config.default.yaml /etc/ai-shell/config.yaml
-
-USER ai
-WORKDIR ${HOST_HOME_ROOT}/${HOST_USER}
-
-# 8. Initialize the wrapper config
-RUN touch /home/ai/.gitconfig.host \
-    && ln -s /home/ai/.gitconfig.host ${HOST_HOME_ROOT}/${HOST_USER}/.gitconfig.host
-RUN echo "[include]" > /home/ai/.gitconfig && \
-    echo "  path = ${HOST_HOME_ROOT}/${HOST_USER}/.gitconfig.host" >> /home/ai/.gitconfig && \
-    echo "[credential]" >> /home/ai/.gitconfig && \
-    echo "  helper = store" >> /home/ai/.gitconfig
-RUN ln -s /home/ai/.gitconfig ${HOST_HOME_ROOT}/${HOST_USER}/.gitconfig
 
 ENTRYPOINT ["/usr/local/bin/configure.sh"]
 CMD ["/bin/zsh"]

@@ -30,57 +30,92 @@ func Run(opts RunOptions) error {
 	info := GetProjectInfo(pwd)
 
 	// 2. Reuse Logic
+
 	if opts.Reuse {
+
 		// Check if container exists
+
 		checkCmd := exec.Command("podman", "container", "exists", info.ContainerName) //nolint:gosec
+
 		if err := checkCmd.Run(); err == nil {
+
 			// Check if running
+
 			inspectCmd := exec.Command("podman", "container", "inspect", "-f", "{{.State.Running}}", info.ContainerName) //nolint:gosec
+
 			out, _ := inspectCmd.Output()
+
 			isRunning := strings.TrimSpace(string(out)) == "true"
 
 			if isRunning {
+
 				fmt.Println("   Reusing running container...")
-				return execPodman("exec", "-it", info.ContainerName, "zsh")
+
+				// Must explicitly set user 'ai' because container starts as root
+
+				return execPodman("exec", "-it", "--user", "ai", info.ContainerName, "zsh")
+
 			}
+
 			fmt.Println("   Restarting existing container...")
+
 			return execPodman("start", "-ai", info.ContainerName)
+
 		}
+
 	}
 
 	// 3. Cleanup Old
+
 	_ = exec.Command("podman", "rm", "-f", info.ContainerName).Run() //nolint:gosec
 
 	// 4. Ensure Volume
+
 	_ = exec.Command("podman", "volume", "create", info.VolumeName).Run() //nolint:gosec
 
 	// 5. Construct Flags
+
 	args := []string{"run", "-it", "--rm", "--name", info.ContainerName, "--hostname", "ai-box", "--security-opt", "label=disable", "--userns=keep-id"}
+
 	if opts.NetHost {
+
 		args = append(args, "--network=host")
+
 	}
 
 	// Mounts
+
 	home, _ := os.UserHomeDir()
+
 	hostHomeRoot := "/home"
+
 	if runtime.GOOS == "darwin" {
+
 		hostHomeRoot = "/Users"
+
 	}
+
 	user := os.Getenv("USER")
+
 	targetHome := fmt.Sprintf("%s/%s", hostHomeRoot, user)
 
-	// Standard Mounts
+		// Runtime Path Info & Standard Mounts
 
-	args = append(args,
+		args = append(args,
 
-		"-v", fmt.Sprintf("%s:%s", pwd, pwd),
+			"-e", fmt.Sprintf("HOST_USER=%s", user),
 
-		"-w", pwd,
+			"-e", fmt.Sprintf("HOST_HOME_ROOT=%s", hostHomeRoot),
 
-		"-v", fmt.Sprintf("%s:%s", info.VolumeName, targetHome),
+			"-v", fmt.Sprintf("%s:%s", pwd, pwd),
 
-		"-v", fmt.Sprintf("%s:%s/.gitconfig.host:ro", filepath.Join(home, ".gitconfig"), targetHome),
-	)
+			"-w", pwd,
+
+			"-v", fmt.Sprintf("%s:%s", info.VolumeName, targetHome),
+
+			"-v", fmt.Sprintf("%s:%s/.gitconfig.host:ro", filepath.Join(home, ".gitconfig"), targetHome),
+
+		)
 
 	// Config Mounts
 

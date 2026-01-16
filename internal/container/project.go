@@ -20,7 +20,7 @@ func GetProjectInfo(path string) ProjectInfo {
 	hashStr := fmt.Sprintf("%x", hash)[:12]
 
 	projName := filepath.Base(path)
-	reg := regexp.MustCompile("[^a-zA-Z0-9]+")
+	reg := regexp.MustCompile("[^a-zA-Z0-9_]+")
 	projName = reg.ReplaceAllString(projName, "-")
 	projName = strings.Trim(projName, "-")
 
