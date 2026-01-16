@@ -10,25 +10,25 @@ import (
 //go:embed all:files
 var files embed.FS
 
-// WriteToDir writes the embedded build assets (Containerfile, configure.sh, config.default.yaml)
-// to the specified directory.
-func WriteToDir(dir string) error {
-	entries, err := files.ReadDir("files")
+// WriteToDir writes the embedded build assets from a specific subdirectory
+// (e.g., "base", "profiles/default") to the specified directory.
+func WriteToDir(targetDir, subDir string) error {
+	srcDir := filepath.Join("files", subDir)
+	entries, err := files.ReadDir(srcDir)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
-		data, err := files.ReadFile(filepath.Join("files", entry.Name()))
+		if entry.IsDir() {
+			continue // Skip subdirectories
+		}
+		data, err := files.ReadFile(filepath.Join(srcDir, entry.Name()))
 		if err != nil {
 			return err
 		}
 
-		path := filepath.Join(dir, entry.Name())
-		// config.default.yaml -> config.yaml for the build context if needed,
-		// but Containerfile expects config.default.yaml, so keep names.
-		// Wait, Containerfile COPYs config.default.yaml to /etc/ai-shell/config.yaml.
-		// So we just write exactly what we have.
+		path := filepath.Join(targetDir, entry.Name())
 
 		perm := os.FileMode(0644)
 		if entry.Name() == "configure.sh" {

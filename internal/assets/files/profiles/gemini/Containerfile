@@ -1,0 +1,13 @@
+FROM localhost/ai-shell-base:latest
+
+# 1. Install Node.js (Required for Gemini CLI)
+RUN dnf install -y \
+        nodejs \
+        npm \
+        vim \
+        ripgrep \
+    && dnf clean all
+
+# 2. Install Gemini CLI
+RUN npm install -g @google/gemini-cli
+

@@ -1,0 +1,15 @@
+FROM localhost/ai-shell-base:latest
+
+# 1. Install Node.js (Required for Claude)
+RUN dnf install -y \
+        nodejs \
+        npm \
+        vim \
+        ripgrep \
+        fd-find \
+        git \
+    && dnf clean all
+
+# 2. Install Claude Code
+RUN npm install -g @anthropic-ai/claude-code
+

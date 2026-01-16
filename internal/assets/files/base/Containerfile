@@ -1,0 +1,44 @@
+FROM registry.fedoraproject.org/fedora:41
+
+# 1. Base Setup (User, Sudo, Common Utils)
+RUN dnf install -y \
+        zsh \
+        sudo \
+        which \
+        man-db \
+        procps-ng \
+        findutils \
+        iputils \
+        hostname \
+        wget \
+        git \
+    && dnf clean all
+
+# 2. Create the 'ai' user
+RUN useradd -m -s /bin/zsh -u 1000 ai \
+    && echo "ai ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ai \
+    # Starship & Bindings
+    && echo 'eval "$(starship init zsh)"' >> /home/ai/.zshrc \
+    && echo 'bindkey "^[[H" beginning-of-line' >> /home/ai/.zshrc \
+    && echo 'bindkey "^[[F" end-of-line' >> /home/ai/.zshrc \
+    && echo 'bindkey "^[[3~" delete-char' >> /home/ai/.zshrc \
+    && echo 'bindkey "^[[1;5C" forward-word' >> /home/ai/.zshrc \
+    && echo 'bindkey "^[[1;5D" backward-word' >> /home/ai/.zshrc
+
+# 3. Git Credential Fix
+RUN git config --system credential.helper store
+
+# 4. Setup Entrypoint
+COPY configure.sh /usr/local/bin/configure.sh
+RUN chmod +x /usr/local/bin/configure.sh
+
+# 5. Default Config
+RUN mkdir -p /etc/ai-shell
+COPY config.default.yaml /etc/ai-shell/config.yaml
+
+# 6. Starship Installation (Common enough to be in base?)
+# Let's put it in base so all profiles look good.
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y >/dev/null
+
+ENTRYPOINT ["/usr/local/bin/configure.sh"]
+CMD ["/bin/zsh"]

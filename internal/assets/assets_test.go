@@ -13,7 +13,7 @@ func TestWriteToDir(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	if err := WriteToDir(tmpDir); err != nil {
+	if err := WriteToDir(tmpDir, "base"); err != nil {
 		t.Fatalf("WriteToDir failed: %v", err)
 	}
 
