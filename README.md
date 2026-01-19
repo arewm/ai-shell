@@ -175,11 +175,12 @@ You can customize registries and SCM settings by creating a configuration file. 
 file in the following priority order (first match wins):
 
 1. **Environment Variable**: `AI_SHELL_CONFIG`
-2. **Project Local**: `.ai-shell.yaml` in the current directory (useful for project-specific robot accounts).
-3. **User Global**: `~/.config/ai-shell/config.yaml`
+2. **DevContainer**: `.devcontainer/devcontainer.json` or `.devcontainer.json` (Standard format).
+3. **Legacy Local**: `.ai-shell.yaml` in the current directory.
+4. **User Global**: `~/.config/ai-shell/config.yaml`
 
 **Security Note:**
-When a local `.ai-shell.yaml` file is detected, `ai-shell` uses a **Trust on First Use** model:
+When a local configuration file is detected, `ai-shell` uses a **Trust on First Use** model:
 1.  **First Run**: You will be prompted to trust the configuration (`[y/N]`).
 2.  **Persistence**: If trusted, the file's "fingerprint" (hash) is saved to `~/.local/share/ai-shell/trusted/`. You
     won't be asked again.

@@ -15,24 +15,53 @@ import (
 // LoadConfigWithTrust resolves the config and handles TOFU logic.
 func LoadConfigWithTrust(startDir string, autoTrust bool) (*Config, string, error) {
 	configPath := ""
+	isDevContainer := false
 
 	// 1. Env Var (Always trusted)
 	if envPath := os.Getenv("AI_SHELL_CONFIG"); envPath != "" {
 		return loadFile(envPath)
 	}
 
-	// 2. Upward Search for .ai-shell.yaml
-	localPath, err := findUpward(startDir, ".ai-shell.yaml")
-	if err == nil && localPath != "" {
-		trusted, err := checkTrust(localPath, autoTrust)
+	// 2. Upward Search for Configuration
+	// Priority 1: .devcontainer/devcontainer.json
+	dcPath, err := findUpward(startDir, ".devcontainer/devcontainer.json")
+	if err == nil && dcPath != "" {
+		configPath = dcPath
+		isDevContainer = true
+	} else {
+		// Priority 2: .devcontainer.json
+		dcPath, err = findUpward(startDir, ".devcontainer.json")
+		if err == nil && dcPath != "" {
+			configPath = dcPath
+			isDevContainer = true
+		} else {
+			// Priority 3: .ai-shell.yaml
+			localPath, err := findUpward(startDir, ".ai-shell.yaml")
+			if err == nil && localPath != "" {
+				configPath = localPath
+			}
+		}
+	}
+
+	if configPath != "" {
+		trusted, err := checkTrust(configPath, autoTrust)
 		if err != nil {
 			return nil, "", err
 		}
 		if trusted {
-			configPath = localPath
-		} else {
-			fmt.Println("   Skipping local configuration.")
+			if isDevContainer {
+				dc, err := ParseDevContainer(configPath)
+				if err != nil {
+					return nil, configPath, err
+				}
+				return dc.ToConfig(), configPath, nil
+			}
+			return loadFile(configPath)
 		}
+
+		fmt.Println("   Skipping local configuration.")
+		// Fall through to global default
+		configPath = ""
 	}
 
 	// 3. Fallback to Global Config (Always trusted)
@@ -52,7 +81,6 @@ func LoadConfigWithTrust(startDir string, autoTrust bool) (*Config, string, erro
 
 	return loadFile(configPath)
 }
-
 func loadFile(path string) (*Config, string, error) {
 	v := viper.New()
 	v.SetConfigFile(path)

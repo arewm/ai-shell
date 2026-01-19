@@ -12,7 +12,7 @@ This roadmap outlines the evolution of `ai-shell` from a personal productivity t
 ## Phase 2: Unification & Profiles (Next)
 
 ### Ecosystem Consistency (Aligning with DevContainers/devaipod)
-- [ ] **Standard Schema**: Migrate from `config.yaml` to standard `devcontainer.json` for configuration.
+- [x] **Standard Schema**: Migrate from `config.yaml` to standard `devcontainer.json` for configuration.
 - [x] **Sharable Images**: Move path mirroring from Build-Time to Runtime (Entrypoint).
     - *Approach*: Container starts as root to create `/Users/$USER` symlinks, then drops privileges to `ai`.
     - *Benefit*: One team-wide binary image can adapt to any user's local path structure.

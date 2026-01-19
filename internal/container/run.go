@@ -86,7 +86,7 @@ func Run(opts RunOptions) error {
 	if opts.ConfigPath != "" {
 		args = append(args, "-v", fmt.Sprintf("%s:/etc/ai-shell/config.yaml:ro", opts.ConfigPath))
 	}
-	
+
 	// Helper to add if exists
 	addMount := func(src, target, opts string) {
 		if _, err := os.Stat(src); err == nil {
@@ -96,7 +96,7 @@ func Run(opts RunOptions) error {
 
 	addMount(filepath.Join(home, ".config", "gcloud"), fmt.Sprintf("%s/.config/gcloud", targetHome), "ro")
 	addMount(filepath.Join(home, ".claude"), fmt.Sprintf("%s/.claude.host", targetHome), "ro")
-	
+
 	if opts.MountSSH {
 		addMount(filepath.Join(home, ".ssh"), fmt.Sprintf("%s/.ssh", targetHome), "ro")
 	}
@@ -107,7 +107,9 @@ func Run(opts RunOptions) error {
 			src := os.ExpandEnv(m.Source)
 			tgt := os.ExpandEnv(m.Target)
 			opt := m.Options
-			if opt == "" { opt = "ro" }
+			if opt == "" {
+				opt = "ro"
+			}
 			if _, err := os.Stat(src); err == nil {
 				args = append(args, "-v", fmt.Sprintf("%s:%s:%s", src, tgt, opt))
 			}
