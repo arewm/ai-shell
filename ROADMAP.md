@@ -21,6 +21,7 @@ This roadmap outlines the evolution of `ai-shell` from a personal productivity t
 ### New Functionality
 - [x] **Named Profiles**: Support `~/.config/ai-shell/<name>/` directories for specialized environments.
     - Example: `ai-shell --profile data-science` or `ai-shell --profile k8s-audit`.
+- [ ] **Profile Isolation**: Add `--isolate` flag to create per-profile persistent volumes (default is shared volume per project).
 - [ ] **Profile Composition**: Allow project configs to inherit from a system profile.
 - [ ] **Network Control**: Implement per-container egress filtering (allow models, block generic web/internal ips).
 

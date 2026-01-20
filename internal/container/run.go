@@ -20,6 +20,7 @@ type RunOptions struct {
 	Config     *config.Config
 	ConfigPath string
 	ImageName  string
+	Profile    string
 }
 
 func Run(opts RunOptions) error {
@@ -30,6 +31,11 @@ func Run(opts RunOptions) error {
 
 	// 1. Get Project Info
 	info := GetProjectInfo(pwd)
+	
+	// Append Profile to Container Name to avoid conflicts
+	if opts.Profile != "" && opts.Profile != "default" {
+		info.ContainerName = fmt.Sprintf("%s-%s", info.ContainerName, opts.Profile)
+	}
 
 	// 2. Reuse Logic
 	if opts.Reuse {
