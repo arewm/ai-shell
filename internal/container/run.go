@@ -58,7 +58,9 @@ func Run(opts RunOptions) error {
 	_ = exec.Command("podman", "volume", "create", info.VolumeName).Run() //nolint:gosec
 
 	// 5. Construct Flags
-	args := []string{"run", "-it", "--rm", "--name", info.ContainerName, "--hostname", "ai-box", "--security-opt", "label=disable", "--userns=keep-id"}
+	// We must start as root (0:0) to allow configure.sh to setup paths/permissions.
+	// The entrypoint will drop privileges to 'ai'.
+	args := []string{"run", "-it", "--rm", "--user", "0:0", "--name", info.ContainerName, "--hostname", "ai-box", "--security-opt", "label=disable", "--userns=keep-id"}
 
 	if opts.NetHost {
 		args = append(args, "--network=host")
@@ -72,6 +74,7 @@ func Run(opts RunOptions) error {
 	}
 	user := os.Getenv("USER")
 	targetHome := fmt.Sprintf("%s/%s", hostHomeRoot, user)
+    fmt.Printf("DEBUG: hostHomeRoot=%s, targetHome=%s\n", hostHomeRoot, targetHome)
 
 	// Runtime Path Info & Standard Mounts
 	args = append(args,
@@ -80,7 +83,7 @@ func Run(opts RunOptions) error {
 		"-v", fmt.Sprintf("%s:%s", pwd, pwd),
 		"-w", pwd,
 		"-v", fmt.Sprintf("%s:%s", info.VolumeName, targetHome),
-		"-v", fmt.Sprintf("%s:%s/.gitconfig.host:ro", filepath.Join(home, ".gitconfig"), targetHome),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(home, ".gitconfig"), "/etc/ai-shell/gitconfig.host"),
 	)
 
 	// Config Mounts (Merged)

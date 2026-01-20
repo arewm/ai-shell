@@ -1,0 +1,54 @@
+# Optional: Override the list of environment variables to pass into the shell
+# If omitted, a default set of common variables is used.
+env_vars:
+  - GH_USER
+  - GH_AI_SHELL_TOKEN
+  - GH_TOKEN
+  - GOOGLE_CLOUD_PROJECT
+  - VERTEX_LOCATION
+  - GLAB_USER
+  - GLAB_CEE_AI_SHELL_TOKEN
+  - GLAB_AI_SHELL_TOKEN
+  - RH_REGISTRY_USER
+  - RH_REGISTRY_PASS
+  - QUAY_AI_SHELL_USER
+  - QUAY_AI_SHELL_PASS
+  - GHCR_AI_SHELL_TOKEN
+  - GEMINI_API_KEY
+  - CLAUDE_CODE_USE_VERTEX
+  - CLOUD_ML_REGION
+  - ANTHROPIC_VERTEX_PROJECT_ID
+  - KUBECONFIG
+
+mounts:
+  - source: "$KUBECONFIG"
+    target: "$KUBECONFIG"
+    options: ro
+  - source: "$HOME/.config/kubearchive"
+    target: "$HOME/.config/kubearchive"
+    options: ro
+
+#podman_args:
+#  - "--network=host"
+
+registries:
+  - registry: "quay.io"
+    username_env: "QUAY_AI_SHELL_USER"
+    token_env: "QUAY_AI_SHELL_PASS"
+  - registry: "registry.redhat.io"
+    username_env: "RH_REGISTRY_USER"
+    token_env: "RH_REGISTRY_PASS"
+  - registry: "ghcr.io"
+    username_env: "GH_USER"
+    token_env: "GH_AI_SHELL_TOKEN"
+
+scms:
+  - host: "github.com"
+    token_env: "GH_TOKEN"
+    username_env: "GH_USER"
+  - host: "gitlab.cee.redhat.com"
+    token_env: "GLAB_CEE_AI_SHELL_TOKEN"
+    username_env: "GLAB_USER"
+  - host: "gitlab.com"
+    token_env: "GLAB_AI_SHELL_TOKEN"
+    username_env: "GLAB_USER"
