@@ -12,74 +12,108 @@ import (
 	"github.com/spf13/viper"
 )
 
-// LoadConfigWithTrust resolves the config and handles TOFU logic.
+// LoadConfigWithTrust resolves and merges configuration.
+// Priority: Project Config merges into Global Config.
 func LoadConfigWithTrust(startDir string, autoTrust bool) (*Config, string, error) {
-	configPath := ""
-	isDevContainer := false
-
-	// 1. Env Var (Always trusted)
-	if envPath := os.Getenv("AI_SHELL_CONFIG"); envPath != "" {
-		return loadFile(envPath)
+	// 1. Load Global Config
+	globalCfg := &Config{}
+	home, err := os.UserHomeDir()
+	if err == nil {
+		globalPath := filepath.Join(home, ".config", "ai-shell", "config.yaml")
+		if _, err := os.Stat(globalPath); err == nil {
+			c, _, err := loadFile(globalPath)
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to load global config: %w", err)
+			}
+			globalCfg = c
+		}
 	}
 
-	// 2. Upward Search for Configuration
-	// Priority 1: .devcontainer/devcontainer.json
-	dcPath, err := findUpward(startDir, ".devcontainer/devcontainer.json")
-	if err == nil && dcPath != "" {
-		configPath = dcPath
-		isDevContainer = true
+	// 2. Resolve Project Config Path
+	projectPath := ""
+	isDevContainer := false
+
+	if envPath := os.Getenv("AI_SHELL_CONFIG"); envPath != "" {
+		projectPath = envPath
 	} else {
-		// Priority 2: .devcontainer.json
-		dcPath, err = findUpward(startDir, ".devcontainer.json")
+		// Priority 1: .devcontainer/devcontainer.json
+		dcPath, err := findUpward(startDir, ".devcontainer/devcontainer.json")
 		if err == nil && dcPath != "" {
-			configPath = dcPath
+			projectPath = dcPath
 			isDevContainer = true
 		} else {
-			// Priority 3: .ai-shell.yaml
-			localPath, err := findUpward(startDir, ".ai-shell.yaml")
-			if err == nil && localPath != "" {
-				configPath = localPath
+			// Priority 2: .devcontainer.json
+			dcPath, err = findUpward(startDir, ".devcontainer.json")
+			if err == nil && dcPath != "" {
+				projectPath = dcPath
+				isDevContainer = true
+			} else {
+				// Priority 3: .ai-shell.yaml
+				localPath, err := findUpward(startDir, ".ai-shell.yaml")
+				if err == nil && localPath != "" {
+					projectPath = localPath
+				}
 			}
 		}
 	}
 
-	if configPath != "" {
-		trusted, err := checkTrust(configPath, autoTrust)
+	// 3. Load and Merge Project Config
+	if projectPath != "" {
+		trusted, err := checkTrust(projectPath, autoTrust)
 		if err != nil {
 			return nil, "", err
 		}
 		if trusted {
+			var projectCfg *Config
 			if isDevContainer {
-				dc, err := ParseDevContainer(configPath)
+				dc, err := ParseDevContainer(projectPath)
 				if err != nil {
-					return nil, configPath, err
+					return nil, projectPath, err
 				}
-				return dc.ToConfig(), configPath, nil
+				projectCfg = dc.ToConfig()
+			} else {
+				c, _, err := loadFile(projectPath)
+				if err != nil {
+					return nil, projectPath, err
+				}
+				projectCfg = c
 			}
-			return loadFile(configPath)
-		}
 
+			mergeConfig(globalCfg, projectCfg)
+			return globalCfg, projectPath, nil
+		}
+		
 		fmt.Println("   Skipping local configuration.")
-		// Fall through to global default
-		configPath = ""
 	}
 
-	// 3. Fallback to Global Config (Always trusted)
-	if configPath == "" {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			globalPath := filepath.Join(home, ".config", "ai-shell", "config.yaml")
-			if _, err := os.Stat(globalPath); err == nil {
-				configPath = globalPath
-			}
+	return globalCfg, "", nil
+}
+
+func mergeConfig(base, override *Config) {
+	// EnvVars: Append unique
+	seen := make(map[string]bool)
+	for _, v := range base.EnvVars {
+		seen[v] = true
+	}
+	for _, v := range override.EnvVars {
+		if !seen[v] {
+			base.EnvVars = append(base.EnvVars, v)
+			seen[v] = true
 		}
 	}
 
-	if configPath == "" {
-		return &Config{}, "", nil
-	}
+	// Mounts: Append (Project overrides happen naturally if Podman respects last flag,
+	// but strictly we should dedupe by Target. For simplicity, append works as last-mount-wins in Podman usually).
+	base.Mounts = append(base.Mounts, override.Mounts...)
 
-	return loadFile(configPath)
+	// Args: Append
+	base.PodmanArgs = append(base.PodmanArgs, override.PodmanArgs...)
+
+	// Registries: Append
+	base.Registries = append(base.Registries, override.Registries...)
+
+	// SCMs: Append
+	base.SCMs = append(base.SCMs, override.SCMs...)
 }
 func loadFile(path string) (*Config, string, error) {
 	v := viper.New()

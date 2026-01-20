@@ -1,6 +1,7 @@
 package container
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -82,9 +83,21 @@ func Run(opts RunOptions) error {
 		"-v", fmt.Sprintf("%s:%s/.gitconfig.host:ro", filepath.Join(home, ".gitconfig"), targetHome),
 	)
 
-	// Config Mounts
-	if opts.ConfigPath != "" {
-		args = append(args, "-v", fmt.Sprintf("%s:/etc/ai-shell/config.yaml:ro", opts.ConfigPath))
+	// Config Mounts (Merged)
+	if opts.Config != nil {
+		// Serialize merged config to temp file
+		// We use JSON because yq (in container) can read it and it avoids adding a yaml dep
+		configData, err := json.Marshal(opts.Config)
+		if err == nil {
+			tmpConfig, err := os.CreateTemp("", "ai-shell-config-*.json")
+			if err == nil {
+				defer os.Remove(tmpConfig.Name())
+				if _, err := tmpConfig.Write(configData); err == nil {
+					tmpConfig.Close()
+					args = append(args, "-v", fmt.Sprintf("%s:/etc/ai-shell/config.yaml:ro", tmpConfig.Name()))
+				}
+			}
+		}
 	}
 
 	// Helper to add if exists
