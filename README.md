@@ -1,3 +1,5 @@
+# **NOTICE** I have stopped development of this tool. I have instead started just running [devaipod](https://github.com/cgwalters/devaipod) locally. I will contribute functionality to that as I can and as it is accepted.
+
 # ai-shell
 
 `ai-shell` provides a strongly sandboxed, reproducible, and per-project development environment for AI-assisted coding on
